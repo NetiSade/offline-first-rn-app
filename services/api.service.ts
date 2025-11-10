@@ -9,7 +9,7 @@ import { RequestType } from "@/types/queue.types";
 const API_CONFIG = {
   SMALL_REQUEST_DELAY: 500, // 500ms for small requests
   LARGE_REQUEST_DELAY: 2000, // 2s for large requests (simulating image upload)
-  FAILURE_RATE: 0.1, // 10% chance of failure (set to 0 to disable failed tasks demo)
+  FAILURE_RATE: 0, // 0% chance of failure (set to 0.3 to test retry logic and failed tasks)
   // Note: Failures are EXPECTED to demonstrate the retry logic and failed tasks feature
 };
 
