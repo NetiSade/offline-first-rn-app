@@ -42,18 +42,25 @@ export class QueueService {
       // Load persisted total completed count
       this.totalCompletedCount = await StorageService.loadCompletedCount();
 
-      // Reset any items that were stuck in PROCESSING state when app was killed
-      // This ensures consistency between app launches
+      // Single pass: reset PROCESSING items to PENDING and count statuses
       let hasProcessingItems = false;
-      this.queue.forEach((item) => {
+      let pendingCount = 0;
+      let failedCount = 0;
+
+      for (const item of this.queue) {
         if (item.status === QueueItemStatus.PROCESSING) {
           item.status = QueueItemStatus.PENDING;
           hasProcessingItems = true;
+          pendingCount++;
           console.log(
             `🔄 Resetting item ${item.id} from PROCESSING to PENDING`
           );
+        } else if (item.status === QueueItemStatus.PENDING) {
+          pendingCount++;
+        } else if (item.status === QueueItemStatus.FAILED) {
+          failedCount++;
         }
-      });
+      }
 
       // Persist if we made changes
       if (hasProcessingItems) {
@@ -61,9 +68,7 @@ export class QueueService {
       }
 
       console.log(
-        `Queue initialized with ${this.queue.length} items (${
-          this.getPendingItems().length
-        } pending, ${this.getFailedItems().length} failed)`
+        `Queue initialized with ${this.queue.length} items (${pendingCount} pending, ${failedCount} failed)`
       );
       this.notifyListeners();
     } catch (error) {
@@ -95,28 +100,30 @@ export class QueueService {
   }
 
   /**
-   * Get all pending items sorted by priority (small first, then large)
-   * Within each priority, sort by timestamp (FIFO)
+   * Get the next pending item with highest priority
+   * Single O(n) pass to find the earliest small or large item
    */
-  getPendingItems(): QueueItem[] {
-    const pending = this.queue.filter(
-      (item) => item.status === QueueItemStatus.PENDING
-    );
+  private getNextPendingItem(): QueueItem | null {
+    let nextSmall: QueueItem | null = null;
+    let nextLarge: QueueItem | null = null;
 
-    // Separate by type
-    const smallRequests = pending.filter(
-      (item) => item.type === RequestType.SMALL
-    );
-    const largeRequests = pending.filter(
-      (item) => item.type === RequestType.LARGE
-    );
+    // Single pass through queue to find next small and large items
+    for (const item of this.queue) {
+      if (item.status !== QueueItemStatus.PENDING) continue;
 
-    // Sort each group by timestamp (FIFO)
-    smallRequests.sort((a, b) => a.timestamp - b.timestamp);
-    largeRequests.sort((a, b) => a.timestamp - b.timestamp);
+      if (item.type === RequestType.SMALL) {
+        if (!nextSmall || item.timestamp < nextSmall.timestamp) {
+          nextSmall = item;
+        }
+      } else {
+        if (!nextLarge || item.timestamp < nextLarge.timestamp) {
+          nextLarge = item;
+        }
+      }
+    }
 
-    // Return small requests first, then large requests
-    return [...smallRequests, ...largeRequests];
+    // Small requests have priority
+    return nextSmall || nextLarge;
   }
 
   /**
@@ -134,23 +141,18 @@ export class QueueService {
 
     try {
       // Keep processing until no more pending items
-      // Re-fetch pending items after each task to respect dynamic priority
-      while (true) {
-        const pendingItems = this.getPendingItems();
+      // Re-check after each task to respect dynamic priority
+      let nextItem = this.getNextPendingItem();
 
-        if (pendingItems.length === 0) {
-          console.log("No pending items to process");
-          break;
-        }
-
-        // Process only the highest priority item (first in sorted array)
-        // This allows newly added high-priority items to jump the queue
-        const nextItem = pendingItems[0];
-        console.log(
-          `Processing next item: ${nextItem.id} (${nextItem.type}) - ${pendingItems.length} items remaining`
-        );
+      while (nextItem !== null) {
+        console.log(`Processing next item: ${nextItem.id} (${nextItem.type})`);
 
         await this.processItem(nextItem);
+
+        // Small delay to ensure UI updates before processing next item
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        nextItem = this.getNextPendingItem();
       }
 
       console.log("✅ Queue processing completed");
