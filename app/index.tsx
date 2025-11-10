@@ -11,7 +11,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useOfflineQueue } from "@/hooks/use-offline-queue";
 import { StorageService } from "@/services/storage.service";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Appearance,
   ScrollView,
@@ -24,6 +24,15 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const [manualSync, setManualSync] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+
+  // Load sync mode preference on mount to sync with service
+  useEffect(() => {
+    const loadSyncMode = async () => {
+      const savedMode = await StorageService.loadSyncMode();
+      setManualSync(savedMode);
+    };
+    loadSyncMode();
+  }, []);
 
   const {
     isOnline,
@@ -52,11 +61,13 @@ export default function HomeScreen() {
   const handleClearStorage = async () => {
     await StorageService.clearAll();
     clearAll();
+    setManualSync(false); // Reset to auto mode
     handleCloseSettings();
   };
 
-  const handleSyncModeChange = (manual: boolean) => {
+  const handleSyncModeChange = async (manual: boolean) => {
     setManualSync(manual);
+    await StorageService.saveSyncMode(manual);
     handleCloseSettings();
   };
 

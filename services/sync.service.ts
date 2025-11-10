@@ -1,5 +1,6 @@
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import { queueService } from './queue.service';
+import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
+import { queueService } from "./queue.service";
+import { StorageService } from "./storage.service";
 
 /**
  * Sync Service
@@ -19,16 +20,24 @@ export class SyncService {
    * Initialize network monitoring
    */
   private async initialize(): Promise<void> {
+    // Load saved sync mode preference first
+    this.manualSync = await StorageService.loadSyncMode();
+    console.log(`Loaded sync mode: ${this.manualSync ? "MANUAL" : "AUTO"}`);
+
     // Get initial network state
     const state = await NetInfo.fetch();
     this.isOnline = state.isConnected ?? false;
-    
-    console.log(`Initial network state: ${this.isOnline ? 'ONLINE' : 'OFFLINE'}`);
+
+    console.log(
+      `Initial network state: ${this.isOnline ? "ONLINE" : "OFFLINE"}`
+    );
 
     // Subscribe to network state changes
-    this.unsubscribeNetInfo = NetInfo.addEventListener((state: NetInfoState) => {
-      this.handleNetworkChange(state);
-    });
+    this.unsubscribeNetInfo = NetInfo.addEventListener(
+      (state: NetInfoState) => {
+        this.handleNetworkChange(state);
+      }
+    );
 
     // If we're online at startup and in auto mode, process any pending items
     // This handles the case where app was restarted with pending items
@@ -37,7 +46,9 @@ export class SyncService {
       setTimeout(() => {
         const stats = queueService.getStats();
         if (stats.totalPending > 0) {
-          console.log('🔄 App started online with pending items - triggering auto-sync');
+          console.log(
+            "🔄 App started online with pending items - triggering auto-sync"
+          );
           this.triggerSync();
         }
       }, 100);
@@ -51,7 +62,9 @@ export class SyncService {
     const wasOnline = this.isOnline;
     this.isOnline = state.isConnected ?? false;
 
-    console.log(`Network state changed: ${this.isOnline ? 'ONLINE' : 'OFFLINE'}`);
+    console.log(
+      `Network state changed: ${this.isOnline ? "ONLINE" : "OFFLINE"}`
+    );
 
     // Notify listeners
     this.notifyNetworkListeners(this.isOnline);
@@ -59,10 +72,10 @@ export class SyncService {
     // If we just came online, try to sync the queue (only if in auto mode)
     if (!wasOnline && this.isOnline) {
       if (!this.manualSync) {
-        console.log('🌐 Connection restored - starting auto-sync');
+        console.log("🌐 Connection restored - starting auto-sync");
         this.triggerSync();
       } else {
-        console.log('🌐 Connection restored - waiting for manual sync');
+        console.log("🌐 Connection restored - waiting for manual sync");
       }
     }
   }
@@ -72,17 +85,17 @@ export class SyncService {
    */
   async triggerSync(): Promise<void> {
     if (!this.isOnline) {
-      console.log('Cannot sync - device is offline');
+      console.log("Cannot sync - device is offline");
       return;
     }
 
-    console.log('Starting sync...');
-    
+    console.log("Starting sync...");
+
     try {
       await queueService.processQueue();
-      console.log('Sync completed successfully');
+      console.log("Sync completed successfully");
     } catch (error) {
-      console.error('Sync failed:', error);
+      console.error("Sync failed:", error);
     }
   }
 
@@ -100,7 +113,7 @@ export class SyncService {
   setManualSyncMode(manualSync: boolean): void {
     if (this.manualSync !== manualSync) {
       this.manualSync = manualSync;
-      console.log(`Sync mode changed to: ${manualSync ? 'MANUAL' : 'AUTO'}`);
+      console.log(`Sync mode changed to: ${manualSync ? "MANUAL" : "AUTO"}`);
     }
   }
 
@@ -109,13 +122,15 @@ export class SyncService {
    */
   subscribeToNetworkChanges(listener: (isOnline: boolean) => void): () => void {
     this.networkListeners.push(listener);
-    
+
     // Immediately call with current status
     listener(this.isOnline);
-    
+
     // Return unsubscribe function
     return () => {
-      this.networkListeners = this.networkListeners.filter((l) => l !== listener);
+      this.networkListeners = this.networkListeners.filter(
+        (l) => l !== listener
+      );
     };
   }
 
@@ -146,4 +161,3 @@ export class SyncService {
 
 // Singleton instance
 export const syncService = new SyncService();
-

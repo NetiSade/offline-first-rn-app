@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   QUEUE: '@offline_queue',
   SUCCESS_LOGS: '@success_logs',
   COMPLETED_COUNT: '@completed_count',
+  SYNC_MODE: '@sync_mode',
 };
 
 /**
@@ -117,6 +118,31 @@ export const StorageService = {
   },
 
   /**
+   * Save sync mode preference to storage
+   */
+  async saveSyncMode(isManual: boolean): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.SYNC_MODE, JSON.stringify(isManual));
+    } catch (error) {
+      console.error('Error saving sync mode to storage:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Load sync mode preference from storage
+   */
+  async loadSyncMode(): Promise<boolean> {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEYS.SYNC_MODE);
+      return value != null ? JSON.parse(value) : false; // Default to auto mode (false)
+    } catch (error) {
+      console.error('Error loading sync mode from storage:', error);
+      return false; // Default to auto mode on error
+    }
+  },
+
+  /**
    * Clear all storage (for testing/reset purposes)
    */
   async clearAll(): Promise<void> {
@@ -125,6 +151,7 @@ export const StorageService = {
         STORAGE_KEYS.QUEUE,
         STORAGE_KEYS.SUCCESS_LOGS,
         STORAGE_KEYS.COMPLETED_COUNT,
+        STORAGE_KEYS.SYNC_MODE,
       ]);
     } catch (error) {
       console.error('Error clearing all storage:', error);

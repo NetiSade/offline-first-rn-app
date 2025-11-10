@@ -6,7 +6,7 @@ import {
   RequestType,
   SuccessLog,
 } from "@/types/queue.types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Custom hook for offline queue operations
@@ -25,6 +25,7 @@ export const useOfflineQueue = (manualSync: boolean = false) => {
   const [pendingItems, setPendingItems] = useState<QueueItem[]>([]);
   const [failedItems, setFailedItems] = useState<QueueItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isFirstMount = useRef(true);
 
   /**
    * Update stats and logs
@@ -84,6 +85,12 @@ export const useOfflineQueue = (manualSync: boolean = false) => {
    * Update sync service when manualSync mode changes
    */
   useEffect(() => {
+    // Skip on first mount - let the service handle initialization from storage
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
     syncService.setManualSyncMode(manualSync);
 
     // If switching to auto mode (manualSync = false) and online with pending tasks, trigger sync
