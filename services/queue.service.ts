@@ -298,8 +298,8 @@ export class QueueService {
     smallRequests.sort((a, b) => a.timestamp - b.timestamp);
     largeRequests.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Return small requests first, then large requests
-    return [...smallRequests, ...largeRequests];
+    //  Return small requests first, then large requests  (deep copies so React detects changes in status)
+    return [...smallRequests, ...largeRequests].map((item) => ({ ...item }));
   }
 
   /**
@@ -313,7 +313,9 @@ export class QueueService {
    * Get failed items (reached max retries)
    */
   getFailedItems(): QueueItem[] {
-    return this.queue.filter((item) => item.status === QueueItemStatus.FAILED);
+    return this.queue
+      .filter((item) => item.status === QueueItemStatus.FAILED)
+      .map((item) => ({ ...item }));
   }
 
   /**
