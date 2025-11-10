@@ -63,6 +63,24 @@ export const useOfflineQueue = (manualSync: boolean = false) => {
   }, [updateState]);
 
   /**
+   * Process the queue
+   */
+  const processQueue = useCallback(async () => {
+    if (isProcessing) {
+      console.log("Already processing queue, skipping...");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // The queue service now handles processing all items including those added during processing
+      await syncService.triggerSync();
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing]);
+
+  /**
    * Update sync service when manualSync mode changes
    */
   useEffect(() => {
@@ -93,7 +111,7 @@ export const useOfflineQueue = (manualSync: boolean = false) => {
     if (!manualSync && isOnline) {
       processQueue();
     }
-  }, [isOnline, manualSync]);
+  }, [isOnline, manualSync, processQueue]);
 
   /**
    * Add a large request to the queue
@@ -113,25 +131,7 @@ export const useOfflineQueue = (manualSync: boolean = false) => {
     if (!manualSync && isOnline) {
       processQueue();
     }
-  }, [isOnline, manualSync]);
-
-  /**
-   * Process the queue
-   */
-  const processQueue = useCallback(async () => {
-    if (isProcessing) {
-      console.log("Already processing queue, skipping...");
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      // The queue service now handles processing all items including those added during processing
-      await syncService.triggerSync();
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [isProcessing]);
+  }, [isOnline, manualSync, processQueue]);
 
   /**
    * Clear all data (for testing)
