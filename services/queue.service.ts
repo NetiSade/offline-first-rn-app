@@ -23,6 +23,7 @@ const RETRY_CONFIG = {
 export class QueueService {
   private queue: QueueItem[] = [];
   private successLogs: SuccessLog[] = [];
+  private totalCompletedCount: number = 0;
   private isProcessing: boolean = false;
   private listeners: (() => void)[] = [];
 
@@ -37,6 +38,9 @@ export class QueueService {
     try {
       this.queue = await StorageService.loadQueue();
       this.successLogs = await StorageService.loadSuccessLogs();
+
+      // Load persisted total completed count
+      this.totalCompletedCount = await StorageService.loadCompletedCount();
 
       // Reset any items that were stuck in PROCESSING state when app was killed
       // This ensures consistency between app launches
@@ -186,7 +190,11 @@ export class QueueService {
         };
         this.successLogs.unshift(log); // Add to beginning of array
 
-        // Keep only last 50 logs
+        // Increment total completed count (keeps growing even when logs are trimmed)
+        this.totalCompletedCount++;
+        await StorageService.saveCompletedCount(this.totalCompletedCount);
+
+        // Keep only last 50 logs for display
         if (this.successLogs.length > 50) {
           this.successLogs = this.successLogs.slice(0, 50);
         }
@@ -248,7 +256,7 @@ export class QueueService {
         .length,
       largePending: pending.filter((item) => item.type === RequestType.LARGE)
         .length,
-      totalCompleted: this.successLogs.length,
+      totalCompleted: this.totalCompletedCount,
     };
   }
 
@@ -349,6 +357,7 @@ export class QueueService {
   async clearAll(): Promise<void> {
     this.queue = [];
     this.successLogs = [];
+    this.totalCompletedCount = 0;
     await StorageService.clearAll();
     this.notifyListeners();
   }

@@ -7,6 +7,7 @@ import { QueueItem, SuccessLog } from '@/types/queue.types';
 const STORAGE_KEYS = {
   QUEUE: '@offline_queue',
   SUCCESS_LOGS: '@success_logs',
+  COMPLETED_COUNT: '@completed_count',
 };
 
 /**
@@ -91,11 +92,40 @@ export const StorageService = {
   },
 
   /**
+   * Save completed count to storage
+   */
+  async saveCompletedCount(count: number): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_COUNT, count.toString());
+    } catch (error) {
+      console.error('Error saving completed count to storage:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Load completed count from storage
+   */
+  async loadCompletedCount(): Promise<number> {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEYS.COMPLETED_COUNT);
+      return value != null ? parseInt(value, 10) : 0;
+    } catch (error) {
+      console.error('Error loading completed count from storage:', error);
+      return 0;
+    }
+  },
+
+  /**
    * Clear all storage (for testing/reset purposes)
    */
   async clearAll(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([STORAGE_KEYS.QUEUE, STORAGE_KEYS.SUCCESS_LOGS]);
+      await AsyncStorage.multiRemove([
+        STORAGE_KEYS.QUEUE,
+        STORAGE_KEYS.SUCCESS_LOGS,
+        STORAGE_KEYS.COMPLETED_COUNT,
+      ]);
     } catch (error) {
       console.error('Error clearing all storage:', error);
       throw error;

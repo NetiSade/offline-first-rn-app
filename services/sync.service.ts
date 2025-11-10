@@ -29,6 +29,19 @@ export class SyncService {
     this.unsubscribeNetInfo = NetInfo.addEventListener((state: NetInfoState) => {
       this.handleNetworkChange(state);
     });
+
+    // If we're online at startup and in auto mode, process any pending items
+    // This handles the case where app was restarted with pending items
+    if (this.isOnline && !this.manualSync) {
+      // Small delay to ensure queue is fully initialized
+      setTimeout(() => {
+        const stats = queueService.getStats();
+        if (stats.totalPending > 0) {
+          console.log('🔄 App started online with pending items - triggering auto-sync');
+          this.triggerSync();
+        }
+      }, 100);
+    }
   }
 
   /**

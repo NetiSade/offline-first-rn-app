@@ -39,16 +39,25 @@ export default function HomeScreen() {
     clearAll,
   } = useOfflineQueue(manualSync);
 
+  const handleCloseSettings = () => {
+    setSettingsVisible(false);
+  };
+
   const toggleTheme = () => {
     const newScheme = colorScheme === "dark" ? "light" : "dark";
     Appearance.setColorScheme(newScheme);
-    setSettingsVisible(false);
+    handleCloseSettings();
   };
 
   const handleClearStorage = async () => {
     await StorageService.clearAll();
     clearAll();
-    setSettingsVisible(false);
+    handleCloseSettings();
+  };
+
+  const handleSyncModeChange = (manual: boolean) => {
+    setManualSync(manual);
+    handleCloseSettings();
   };
 
   return (
@@ -116,8 +125,8 @@ export default function HomeScreen() {
       <SettingsModal
         visible={settingsVisible}
         manualSync={manualSync}
-        onClose={() => setSettingsVisible(false)}
-        onSyncModeChange={setManualSync}
+        onClose={handleCloseSettings}
+        onSyncModeChange={handleSyncModeChange}
         onToggleTheme={toggleTheme}
         onClearStorage={handleClearStorage}
       />
