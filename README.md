@@ -137,13 +137,38 @@ Tap the **⋮ button** in the top-right corner to access:
 - **Implementation**: Single queue, sorted by priority at processing time
 - **Benefit**: Simpler code, maintains order within priority levels
 
-### 5. **Mock API with Configurable Failures**
+### 5. **State Management with Context API**
+
+- **Rationale**: Centralized user preferences (theme, sync mode) without prop drilling
+- **Implementation**: `PreferencesContext` provides global access to settings
+- **Benefit**: Clean component signatures, single source of truth
+
+#### 🔄 State Management for Larger Apps
+
+For apps with more complex state requirements, consider these alternatives:
+
+| Tool | Best For | Pros | Cons |
+|------|----------|------|------|
+| **Redux** | Large teams, complex state logic | Time-travel debugging, DevTools, predictable updates | Boilerplate-heavy, learning curve |
+| **MobX** | Reactive UIs, rapid development | Less boilerplate, automatic updates | Less predictable, harder to debug |
+| **Zustand** | Simple global state | Minimal API, no Provider needed | Limited ecosystem, fewer tools |
+| **Recoil** | Derived state, atom-based patterns | Fine-grained reactivity, Facebook-backed | Newer, smaller community |
+| **Jotai** | Atomic state management | Lightweight, TypeScript-first | Smaller ecosystem |
+
+**Why Context API here?**
+- Only 2-3 settings to manage
+- Infrequent updates (user rarely changes preferences)
+- No complex state derivations
+- No need for middleware or dev tools
+- Perfect for small-to-medium apps
+
+### 6. **Mock API with Configurable Failures**
 
 - **Rationale**: Realistic testing without backend dependency
 - **Features**: Adjustable delays and failure rates
 - **Benefit**: Easy to test various network conditions
 
-### 6. **Observer Pattern for UI Updates**
+### 7. **Observer Pattern for UI Updates**
 
 - **Rationale**: Clean separation between services and UI
 - **Implementation**: Services notify subscribers of changes
@@ -229,6 +254,37 @@ const RETRY_CONFIG = {
 ```
 
 **Note:** Exponential backoff: 1s → 2s → 4s → 8s (capped at 10s)
+
+## 📁 Project Structure
+
+```
+app/
+  ├── _layout.tsx              # Root layout with PreferencesProvider
+  └── index.tsx                # Main screen
+components/queue/              # Modular UI components
+  ├── action-buttons.tsx       # Small/Large request buttons
+  ├── failed-tasks-card.tsx    # Failed tasks with retry
+  ├── instructions-card.tsx    # Testing instructions
+  ├── pending-queue-card.tsx   # Pending/processing queue
+  ├── queue-stats-card.tsx     # Stats + Sync Now button
+  ├── settings-modal.tsx       # Settings menu
+  ├── status-card.tsx          # Network status indicator
+  ├── success-logs-card.tsx    # Completed tasks log
+  └── task-item.tsx            # Reusable task item component
+contexts/
+  └── preferences-context.tsx  # User preferences (theme, sync mode)
+hooks/
+  └── use-offline-queue.ts     # Queue operations interface
+services/
+  ├── api.service.ts           # Mock API (500ms/2s delays)
+  ├── queue.service.ts         # Priority queue + retry logic
+  ├── storage.service.ts       # AsyncStorage wrapper
+  └── sync.service.ts          # Network monitoring
+types/
+  └── queue.types.ts           # TypeScript interfaces
+utils/
+  └── format.utils.ts          # Date/time formatting
+```
 
 ## 🔧 Troubleshooting
 

@@ -1,10 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePreferences } from "@/contexts/preferences-context";
 import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 
 interface SettingsModalProps {
   visible: boolean;
-  manualSync: boolean;
   onClose: () => void;
   onSyncModeChange: (manual: boolean) => void;
   onToggleTheme: () => void;
@@ -13,13 +13,13 @@ interface SettingsModalProps {
 
 export function SettingsModal({
   visible,
-  manualSync,
   onClose,
   onSyncModeChange,
   onToggleTheme,
   onClearStorage,
 }: SettingsModalProps) {
   const colorScheme = useColorScheme();
+  const { manualSync } = usePreferences();
 
   return (
     <Modal

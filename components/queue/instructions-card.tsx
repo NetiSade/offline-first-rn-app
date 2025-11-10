@@ -1,14 +1,12 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePreferences } from "@/contexts/preferences-context";
 import { StyleSheet } from "react-native";
 
-interface InstructionsCardProps {
-  manualSync: boolean;
-}
-
-export function InstructionsCard({ manualSync }: InstructionsCardProps) {
+export function InstructionsCard() {
   const colorScheme = useColorScheme();
+  const { manualSync } = usePreferences();
 
   const instructions = manualSync
     ? '1. Enable Airplane Mode on your device\n2. Tap "Small" and "Large" buttons to queue requests\n3. Disable Airplane Mode\n4. Tap "Sync Now" button to manually sync'

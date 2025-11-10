@@ -1,12 +1,12 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePreferences } from "@/contexts/preferences-context";
 import { QueueStats } from "@/types/queue.types";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 interface QueueStatsCardProps {
   stats: QueueStats;
-  manualSync: boolean;
   isOnline: boolean;
   isProcessing: boolean;
   onSyncPress: () => void;
@@ -14,12 +14,12 @@ interface QueueStatsCardProps {
 
 export function QueueStatsCard({
   stats,
-  manualSync,
   isOnline,
   isProcessing,
   onSyncPress,
 }: QueueStatsCardProps) {
   const colorScheme = useColorScheme();
+  const { manualSync } = usePreferences();
 
   return (
     <ThemedView

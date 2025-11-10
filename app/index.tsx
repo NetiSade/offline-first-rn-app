@@ -8,31 +8,17 @@ import { StatusCard } from "@/components/queue/status-card";
 import { SuccessLogsCard } from "@/components/queue/success-logs-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { usePreferences } from "@/contexts/preferences-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useOfflineQueue } from "@/hooks/use-offline-queue";
 import { StorageService } from "@/services/storage.service";
-import React, { useEffect, useState } from "react";
-import {
-  Appearance,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const [manualSync, setManualSync] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-
-  // Load sync mode preference on mount to sync with service
-  useEffect(() => {
-    const loadSyncMode = async () => {
-      const savedMode = await StorageService.loadSyncMode();
-      setManualSync(savedMode);
-    };
-    loadSyncMode();
-  }, []);
+  const { manualSync, setManualSync, toggleTheme } = usePreferences();
 
   const {
     isOnline,
@@ -52,22 +38,21 @@ export default function HomeScreen() {
     setSettingsVisible(false);
   };
 
-  const toggleTheme = () => {
-    const newScheme = colorScheme === "dark" ? "light" : "dark";
-    Appearance.setColorScheme(newScheme);
+  const handleToggleTheme = async () => {
+    await toggleTheme();
     handleCloseSettings();
   };
 
   const handleClearStorage = async () => {
     await StorageService.clearAll();
     clearAll();
-    setManualSync(false); // Reset to auto mode
+    await setManualSync(false); // Reset to auto mode
+    // Theme will reset to system default on next app restart
     handleCloseSettings();
   };
 
   const handleSyncModeChange = async (manual: boolean) => {
-    setManualSync(manual);
-    await StorageService.saveSyncMode(manual);
+    await setManualSync(manual);
     handleCloseSettings();
   };
 
@@ -104,7 +89,7 @@ export default function HomeScreen() {
       {/* Main Content */}
       <ScrollView style={styles.scrollView}>
         <ThemedView style={styles.content}>
-          <InstructionsCard manualSync={manualSync} />
+          <InstructionsCard />
 
           <ActionButtons
             onSmallPress={addSmallRequest}
@@ -113,7 +98,6 @@ export default function HomeScreen() {
 
           <QueueStatsCard
             stats={stats}
-            manualSync={manualSync}
             isOnline={isOnline}
             isProcessing={isProcessing}
             onSyncPress={processQueue}
@@ -135,10 +119,9 @@ export default function HomeScreen() {
 
       <SettingsModal
         visible={settingsVisible}
-        manualSync={manualSync}
         onClose={handleCloseSettings}
         onSyncModeChange={handleSyncModeChange}
-        onToggleTheme={toggleTheme}
+        onToggleTheme={handleToggleTheme}
         onClearStorage={handleClearStorage}
       />
     </ThemedView>

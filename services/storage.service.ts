@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   SUCCESS_LOGS: '@success_logs',
   COMPLETED_COUNT: '@completed_count',
   SYNC_MODE: '@sync_mode',
+  THEME: '@theme',
 };
 
 /**
@@ -143,6 +144,31 @@ export const StorageService = {
   },
 
   /**
+   * Save theme preference to storage
+   */
+  async saveTheme(theme: 'light' | 'dark' | null): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(theme));
+    } catch (error) {
+      console.error('Error saving theme to storage:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Load theme preference from storage
+   */
+  async loadTheme(): Promise<'light' | 'dark' | null> {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEYS.THEME);
+      return value != null ? JSON.parse(value) : null; // Default to system theme (null)
+    } catch (error) {
+      console.error('Error loading theme from storage:', error);
+      return null; // Default to system theme on error
+    }
+  },
+
+  /**
    * Clear all storage (for testing/reset purposes)
    */
   async clearAll(): Promise<void> {
@@ -152,6 +178,7 @@ export const StorageService = {
         STORAGE_KEYS.SUCCESS_LOGS,
         STORAGE_KEYS.COMPLETED_COUNT,
         STORAGE_KEYS.SYNC_MODE,
+        STORAGE_KEYS.THEME,
       ]);
     } catch (error) {
       console.error('Error clearing all storage:', error);
